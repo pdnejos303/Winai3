@@ -43,7 +43,7 @@ export default function Header() {
 
   /* helper: ตรวจว่าลิงก์นี้ active ไหม */
   const isActive = (href: string) =>
-    normalizePath(pathname) === href.replace(/^\//, "");
+    normalizePath(pathname) === normalizePath(href);
 
   return (
     <header className="sticky top-0 z-20 flex items-center justify-between bg-brand-cream px-6 py-3 shadow-md">
