@@ -1,0 +1,18 @@
+{
+  "home": {
+    "welcome": "Welcome to Winai2",
+    "goLogin": "Go to Login"
+  },
+  "login": {
+    "title":    "Login",
+    "email":    "Email",
+    "password": "Password",
+    "login":    "Login",
+    "signing":  "Signing in…",
+    "or":       "or",
+    "noAccount": "Don’t have an account?",
+    "register": "Register",
+    "success":  "Logged in!",
+    "failed":   "Login failed"
+  }
+}
