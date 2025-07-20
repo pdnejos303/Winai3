@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine          # ใช้เวอร์ชันใหม่ น้ำหนักเบา
+    container_name: winai3_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: pdnejos404
+      POSTGRES_DB: winai3
+      TZ: Asia/Bangkok
+    ports:
+      - "5432:5432"                    # host:container
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:                              # เก็บข้อมูลถาวร
