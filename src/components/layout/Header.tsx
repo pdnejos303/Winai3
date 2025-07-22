@@ -1,8 +1,10 @@
 /* Path: src/components/layout/Header.tsx
    ---------------------------------------------------------------------------
-   • ใช้ normalizePath() แก้ปัญหา /en/en
-   • ไม่มี activeClassName / ไม่มี any
---------------------------------------------------------------------------- */
+   • ใช้ normalizePath() แก้ path ซ้ำ
+   • เปลี่ยนลิงก์ Login → `href="/login"` **ไม่ใส่ locale ซ้ำ** (Link ของ
+     next-intl จะเติม /[locale] ให้อัตโนมัติเอง) ─ จบปัญหา /en/en/login
+   --------------------------------------------------------------------------- */
+
 "use client";
 
 import {
@@ -23,20 +25,20 @@ import { useState }   from "react";
 const THEMES = ["light", "dark", "green", "rose", "blue", "purple"] as const;
 
 export default function Header() {
-  /* ── Path / Locale ──────────────────────────────────────────────────── */
-  const pathname      = usePathname();             // "/en/app/tasks" | "/th" | "/"
-  const [, rawLocale] = pathname.split("/");       // "en" | undefined
+  /* ── Path / Locale ────────────────────────────────────────────────── */
+  const pathname      = usePathname();      // "/en/app/tasks" | "/th" | "/"
+  const [, rawLocale] = pathname.split("/"); // "en" | undefined
   const locale: Locale = LOCALES.includes(rawLocale as Locale)
     ? (rawLocale as Locale)
     : "en";
 
-  const tailPath = normalizePath(pathname);        // "/app/tasks" | "/"
+  const tailPath = normalizePath(pathname); // "/app/tasks" | "/"
 
-  /* ── Theme popover ─────────────────────────────────────────────────── */
+  /* ── Theme popover ────────────────────────────────────────────────── */
   const { theme, setTheme, cycleTheme } = useTheme();
   const [open, setOpen] = useState(false);
 
-  /* ── User session ──────────────────────────────────────────────────── */
+  /* ── User session ─────────────────────────────────────────────────── */
   const { data: session } = useSession();
   const userName  = session?.user?.name  || session?.user?.email || "";
   const userImage = session?.user?.image || "";
@@ -50,7 +52,7 @@ export default function Header() {
       {/* ────── Logo ────── */}
       <Link
         href="/app"
-        locale={locale}
+        /* ไม่ต้องใส่ locale ซ้ำ — Link จะ prefix ให้เมื่ออยู่ใต้ `[locale]` */
         className={clsx(
           "text-2xl font-bold hover:opacity-80",
           isActive("/app") ? "text-brand-green" : "text-brand-green/80",
@@ -63,7 +65,6 @@ export default function Header() {
       <nav className="flex gap-6 text-lg font-medium">
         <Link
           href="/app/tasks"
-          locale={locale}
           className={clsx(
             "hover:text-brand-green",
             isActive("/app/tasks") && "text-brand-green",
@@ -71,6 +72,18 @@ export default function Header() {
         >
           Tasks
         </Link>
+        {/* ⬇⬇⬇  **Login ปลอดซ้ำ locale**  ⬇⬇⬇ */}
+        {!session && (
+          <Link
+            href="/login"          
+            className={clsx(
+              "hover:text-brand-green",
+              isActive("/login") && "text-brand-green",
+            )}
+          >
+            Login
+          </Link>
+        )}
       </nav>
 
       {/* ────── Right zone ────── */}
@@ -120,7 +133,7 @@ export default function Header() {
         {LOCALES.map((l) => (
           <Link
             key={l}
-            href={tailPath}    /* "/app/tasks" หรือ "/" */
+            href={tailPath}         /* "/app/tasks" หรือ "/" */
             locale={l}
             className={clsx(
               "rounded px-2 py-1 text-sm capitalize",
@@ -154,7 +167,7 @@ export default function Header() {
         )}
 
         {/* ----- Logout ----- */}
-        <LogoutButton />
+        {session && <LogoutButton />}
       </div>
     </header>
   );
