@@ -7,21 +7,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/* ─────────────────────────────  USER & AUTH  ───────────────────────────── */
+/**
+ * ───────────────────────── USER & AUTH ─────────────────────────
+ */
 
 model User {
-  id            Int        @id @default(autoincrement())
-  email         String     @unique
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
   name          String?
   image         String?
   emailVerified DateTime?
   passwordHash  String?
 
   // relations
-  Accounts   Account[]
-  Sessions   Session[]
-  Tasks      Task[]
-  Categories Category[]
+  accounts   Account[]
+  sessions   Session[]
+  tasks      Task[]
+  categories Category[]
+  routines   Routine[]
 }
 
 model Account {
@@ -59,36 +62,75 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-/* ─────────────────────────────  TASK & CATEGORY  ───────────────────────── */
+/**
+ * ──────────────────────── TASK & CATEGORY ───────────────────────
+ */
 
 model Task {
-  id          Int       @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   title       String
   description String
   dueDate     DateTime
-  urgency     Int       @default(0)           // 0-none • 1-low • 2-medium • 3-high
-  status      String    @default("incompleted")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  urgency     Int      @default(0) // 0-3
+  status      String   @default("incompleted")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  /* relations */
-  userId     Int
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /**
+   * relations
+   */
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   categoryId Int?
   category   Category? @relation(fields: [categoryId], references: [id])
 }
 
 model Category {
-  id     Int    @id @default(autoincrement())
-  name   String                         // ชื่อหมวด
-  icon   String                         // ex: "lucide:book", "heroicons:heart"
-  color  String                         // HEX / HSL (#FFAA00)
+  id    Int    @id @default(autoincrement())
+  name  String
+  icon  String
+  color String
 
-  /* relations */
+  /**
+   * relations
+   */
   userId Int
-  user   User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   tasks  Task[]
 
-  @@unique([userId, name])              // ไม่ให้ชื่อหมวดซ้ำภายใต้ user เดียวกัน
+  @@unique([userId, name])
+}
+
+/**
+ * ───────────────────────── ROUTINE ─────────────────────────
+ */
+
+model Routine {
+  id          Int      @id @default(autoincrement())
+  title       String
+  weekdays    Int[] // integer[] 0=Sun … 6=Sat
+  startTime   DateTime @db.Time // 18:00:00  (only the time part)
+  durationSec Int
+  progressSec Int      @default(0)
+  finished    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  /**
+   * relations
+   */
+  userId Int
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs   RoutineLog[]
+}
+
+model RoutineLog {
+  id        Int      @id @default(autoincrement())
+  date      DateTime // วันที่ทำจริง
+  doneSec   Int
+  createdAt DateTime @default(now())
+
+  routineId Int
+  routine   Routine @relation(fields: [routineId], references: [id], onDelete: Cascade)
 }

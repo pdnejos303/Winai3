@@ -72,6 +72,10 @@ export default function Header() {
         >
           Tasks
         </Link>
+          {/* 🆕 ROUTINE */}
+  <Link href="/app/routines" className="hover:text-brand-green">
+    Routines
+  </Link>
         {/* ⬇⬇⬇  **Login ปลอดซ้ำ locale**  ⬇⬇⬇ */}
         {!session && (
           <Link

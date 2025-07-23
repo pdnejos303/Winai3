@@ -22,7 +22,7 @@
 
 /* Card / Tile ใช้ตัวแปรแทนสีคงที่ */
 @layer components {
-  .card     { @apply rounded-tile border p-6 shadow-sm bg-[color:var(--bg)]; }
-  .tile-bg  { background: var(--bg); }
+.card { @apply rounded-lg   border p-6 shadow-sm bg-[color:var(--bg)]; }  .tile-bg  { background: var(--bg); }
   .tile-fg  { color: var(--fg);      }
+  
 }
