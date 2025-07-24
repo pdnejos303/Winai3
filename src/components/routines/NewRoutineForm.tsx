@@ -5,27 +5,29 @@ const WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function NewRoutineForm({ onClose }: { onClose(): void }) {
   const [title, setTitle] = useState("");
-  const [days, setDays]   = useState<number[]>([]);
-  const [date, setDate]   = useState(() => new Date().toISOString().substring(0,10)); // yyyy-mm-dd
-  const [time, setTime]   = useState("18:00");
-  const [minutes, setMin] = useState(60);
+  const [days,  setDays]  = useState<number[]>([]);
+  const [date,  setDate]  = useState(
+    new Date().toISOString().substring(0, 10),
+  );
+  const [time,  setTime]  = useState("18:00");
+  const [min,   setMin]   = useState(60);
 
-  const toggle = (i:number)=>
-    setDays((d)=>d.includes(i)?d.filter(n=>n!==i):[...d,i]);
+  const toggle = (i:number) =>
+    setDays((d)=> d.includes(i) ? d.filter(n=>n!==i) : [...d,i]);
 
   async function save() {
     await fetch("/api/routines", {
       method: "POST",
-      headers: {"Content-Type":"application/json"},
+      headers: { "Content-Type":"application/json" },
       body: JSON.stringify({
         title,
         weekdays: days,
         date,
         time,
-        durationSec: minutes*60,
+        durationSec: min * 60,
       }),
     });
-    location.reload();    // รีเฟรชให้เห็นรายการใหม่
+    location.reload();
   }
 
   return (
@@ -35,22 +37,28 @@ export default function NewRoutineForm({ onClose }: { onClose(): void }) {
         <button onClick={onClose} className="text-gray-500 hover:text-red-500">✕</button>
       </div>
 
+      {/* title */}
       <input
         className="mb-3 w-full rounded border px-3 py-1"
         placeholder="Title"
         value={title}
         onChange={(e)=>setTitle(e.target.value)}
+        required
       />
 
       {/* weekdays */}
       <p className="mb-2 text-sm font-medium">Weekdays</p>
       <div className="mb-4 flex gap-1">
         {WEEK.map((d,i)=>(
-          <button key={i}
+          <button
+            key={i}
+            type="button"
             onClick={()=>toggle(i)}
             className={`h-8 w-8 rounded-full text-xs leading-8 ${
-              days.includes(i)?
-              "bg-brand-green text-white":"bg-gray-300 text-gray-700"}`}
+              days.includes(i)
+                ? "bg-brand-green text-white"
+                : "bg-gray-300 text-gray-700"
+            }`}
           >
             {d[0]}
           </button>
@@ -61,21 +69,24 @@ export default function NewRoutineForm({ onClose }: { onClose(): void }) {
       <div className="mb-4 flex gap-4">
         <label className="text-sm font-medium">
           Date
-          <input type="date" value={date} onChange={(e)=>setDate(e.target.value)}
+          <input type="date" value={date}
+            onChange={(e)=>setDate(e.target.value)}
             className="ml-2 rounded border px-2 py-0.5"
           />
         </label>
         <label className="text-sm font-medium">
           Time
-          <input type="time" value={time} onChange={(e)=>setTime(e.target.value)}
+          <input type="time" value={time}
+            onChange={(e)=>setTime(e.target.value)}
             className="ml-2 rounded border px-2 py-0.5"
           />
         </label>
       </div>
 
+      {/* duration */}
       <label className="mb-4 block text-sm font-medium">
         Duration&nbsp;(min)
-        <input type="number" min={1} value={minutes}
+        <input type="number" min={1} value={min}
           onChange={(e)=>setMin(Number(e.target.value))}
           className="ml-2 w-20 rounded border px-2 py-0.5"
         />
