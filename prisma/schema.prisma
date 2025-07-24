@@ -109,20 +109,18 @@ model Category {
 model Routine {
   id          Int      @id @default(autoincrement())
   title       String
-  weekdays    Int[] // integer[] 0=Sun … 6=Sat
-  startTime   DateTime @db.Time // 18:00:00  (only the time part)
-  durationSec Int
-  progressSec Int      @default(0)
+  weekdays    Int[] // 0-Sun … 6-Sat (หลายค่า)
+  startAt     DateTime // วัน+เวลาเริ่ม Routine
+  durationSec Int // ความยาวเป็นวินาที
+  progressSec Int      @default(0) // นับถอยหลัง
   finished    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 
   /**
-   * relations
+   * relation
    */
-  userId Int
-  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  logs   RoutineLog[]
+  userId     Int
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  RoutineLog RoutineLog[]
 }
 
 model RoutineLog {

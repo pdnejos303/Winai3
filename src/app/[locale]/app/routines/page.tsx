@@ -1,171 +1,64 @@
-/* Path: src/components/routines/RoutineCard.tsx
-   ---------------------------------------------------------------------------
-   • ป้องกัน invalid data ⇒ fallback
-   • สี-สัน & ขนาดปรับใหม่ → ดู “การ์ด” ชัดขึ้น
-   • แถบ Progress มี animation
-   • Tooltip title เมื่อ hover
---------------------------------------------------------------------------- */
+/*  ROUTINES PAGE
+    ─────────────────────────────────────────────────────────────────────────
+    • ถ้ายังไม่มี routine   →  แสดง “Add routine” + ฟอร์มเปิดไว้
+    • มี routine แล้ว       →  ปุ่มอยู่ด้านบน, ลิสต์การ์ดจับเวลาได้
+    • ใช้ relation filter user.email แทน userId → ไม่พังแม้ session.user.id ไม่มี
+    • กรอง title ที่ว่าง / null ออก
+*/
 
-"use client";
+import RoutineCard           from "@/components/routines/RoutineCard";
+import NewRoutineSection     from "@/components/routines/NewRoutineSection";
+import { prisma }            from "@/lib/prisma";
+import { getServerSession }  from "next-auth/next";
+import type { Routine }      from "@prisma/client";
+import { revalidatePath }    from "next/cache";
 
-import { useState, useEffect, useRef } from "react";
-import { Play, Pause, CheckCircle, Pencil } from "lucide-react";
-import clsx from "clsx";
-
-interface Props {
-  id: number;
-  title: string;
-  weekdays: number[] | null; // 0–6
-  durationSec: number;
-  progressSec: number;
-  finished: boolean;
-  onEdit?: (id: number) => void;
-  onUpdate?: (
-    id: number,
-    data: Partial<Pick<Props, "progressSec" | "finished">>
-  ) => void;
+/* server-action อัปเดต progress */
+async function updateRoutine(id:number,data:Partial<Routine>){
+  "use server";
+  await prisma.routine.update({where:{id},data});
+  revalidatePath("/app/routines");
 }
 
-const DAY = ["S", "M", "T", "W", "T", "F", "S"];
+/* ───────────── PAGE ───────────── */
+export default async function RoutinePage() {
+  const session = await getServerSession();
+  if (!session) return <p className="p-6">Please login.</p>;
 
-export default function RoutineCard({
-  id,
-  title,
-  weekdays,
-  durationSec,
-  progressSec: initProgress,
-  finished: initFinished,
-  onEdit,
-  onUpdate,
-}: Props) {
-  const [progress, setProgress] = useState(initProgress);
-  const [finished, setFinished] = useState(initFinished);
-  const [running, setRunning] = useState(false);
-  const timer = useRef<NodeJS.Timeout | null>(null);
-
-  /* ---------------- helpers ---------------- */
-  const clearTimer = () => {
-    if (timer.current) {
-      clearInterval(timer.current as unknown as number);
-      timer.current = null;
-    }
-  };
-
-  const tick = () =>
-    setProgress((p) => {
-      const next = p + 1;
-      if (next >= durationSec) {
-        clearTimer();
-        setFinished(true);
-        setRunning(false);
-        onUpdate?.(id, { progressSec: durationSec, finished: true });
-      }
-      return Math.min(next, durationSec);
-    });
-
-  const toggleTimer = () => {
-    if (running) {
-      clearTimer();
-      setRunning(false);
-      return;
-    }
-    if (finished) return;
-
-    timer.current = setInterval(tick, 1_000) as unknown as NodeJS.Timeout;
-    setRunning(true);
-  };
-
-  useEffect(() => () => clearTimer(), []);
-
-  /* ---------------- visual helpers -------- */
-  const days = Array.isArray(weekdays) ? weekdays : [];
-  const percent =
-    durationSec > 0 ? Math.min(100, (progress / durationSec) * 100) : 0;
-
-  const timeLabel = new Date(((progress ?? 0) % 86_400) * 1000)
-    .toISOString()
-    .substring(11, 19);
-
-  /* color scheme */
-  const cardBg = finished ? "bg-emerald-500" : "bg-white/90";
-  const chipActive = finished ? "bg-white text-emerald-600" : "bg-brand-green text-white";
-  const chipInactive = "bg-gray-300 text-white/60";
+  /* -- ดึง routine ของ user (อ้างอิงจาก email) -- */
+  const routines = await prisma.routine.findMany({
+    where: {
+      user:  { email: session.user.email ?? "" },
+      title: { not: "" },                // ตัดสตริงว่าง
+    },
+    orderBy: { id: "asc" },
+  });
 
   return (
-    <div
-      className={clsx(
-        "relative rounded-xl border shadow-sm ring-1 ring-black/5 backdrop-blur",
-        cardBg
-      )}
-      title={title}
-    >
-      {/* top row */}
-      <div className="flex items-center justify-between px-4 py-3">
-        <h3 className={clsx("max-w-[70%] truncate text-base font-semibold", finished && "text-white")}>
-          {title}
-        </h3>
+    <div className="flex flex-col items-center gap-6 p-6">
+      {/* ---------- ปุ่ม / ฟอร์มเพิ่มใหม่ ---------- */}
+      <NewRoutineSection empty={routines.length === 0} />
 
-        <button
-          onClick={toggleTimer}
-          disabled={finished}
-          className={clsx(
-            "grid h-8 w-8 place-items-center rounded-full transition",
-            finished
-              ? "bg-white/20 text-white"
-              : "bg-brand-green/20 text-brand-green hover:bg-brand-green hover:text-white"
-          )}
-          aria-label="toggle timer"
-        >
-          {finished ? (
-            <CheckCircle size={18} strokeWidth={3} />
-          ) : running ? (
-            <Pause size={18} strokeWidth={3} />
-          ) : (
-            <Play size={18} strokeWidth={3} />
-          )}
-        </button>
-      </div>
-
-      {/* weekday chips */}
-      <div className="flex gap-1 px-4 pb-1">
-        {DAY.map((lbl, i) => (
-          <span
-            key={i}
-            className={clsx(
-              "inline-block h-5 w-5 rounded-full text-center text-[10px] leading-5",
-              days.includes(i) ? chipActive : chipInactive
-            )}
-          >
-            {lbl}
-          </span>
-        ))}
-      </div>
-
-      {/* progress bar */}
-      <div className="px-4 pb-3">
-        <div className="h-3 w-full overflow-hidden rounded-full bg-gray-200/80">
-          <div
-            className={clsx(
-              "h-full origin-left rounded-full transition-[width] duration-300 ease-out",
-              finished ? "bg-emerald-600" : "bg-amber-400"
-            )}
-            style={{ width: `${percent}%` }}
-          />
+      {/* ---------- ลิสต์การ์ด ---------- */}
+      {routines.length > 0 && (
+        <div className="grid w-full max-w-md gap-4">
+          {routines.map((r) => (
+            <RoutineCard
+              key={r.id}
+              {...r}
+              onEdit={(id) => console.log("edit", id)}
+              onUpdate={updateRoutine}
+            />
+          ))}
         </div>
-      </div>
+      )}
 
-      {/* footer */}
-      <div className="flex items-center justify-between px-4 pb-4 text-xs font-medium">
-        <span>{finished ? "finished" : timeLabel}</span>
-
-        <button
-          onClick={() => onEdit?.(id)}
-          aria-label="edit routine"
-          className="text-gray-500 hover:text-brand-green"
-        >
-          <Pencil size={14} />
-        </button>
-      </div>
+      {/* ---------- ข้อความเมื่อยังไม่มี routine ---------- */}
+      {routines.length === 0 && (
+        <p className="text-sm text-gray-500">
+          No routine yet — add one above!
+        </p>
+      )}
     </div>
   );
 }
