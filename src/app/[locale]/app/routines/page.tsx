@@ -1,20 +1,31 @@
-import RoutineCard       from "@/components/routines/RoutineCard";
-import NewRoutineSection from "@/components/routines/NewRoutineSection";
-import { prisma }        from "@/lib/prisma";
+/* ────────────────────────────────────────────────────────────────
+ * ROUTINE PAGE – ดึง routine ของผู้ใช้ & เรนเดอร์ RoutineCard
+ * ----------------------------------------------------------------
+ * UPDATE:
+ *   • เปลี่ยนจาก  <RoutineCard routine={r} />  →  ส่ง prop รายตัว
+ *   • แปลง  startAt: Date  →  ISO string  ให้ตรงกับ RoutineCard
+ * ---------------------------------------------------------------- */
+import RoutineCard          from "@/components/routines/RoutineCard";
+import NewRoutineSection    from "@/components/routines/NewRoutineSection";
+import { prisma }           from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
+import { redirect }         from "next/navigation";
 
 export default async function RoutinePage() {
+  /* ---------- 1) Auth guard ---------- */
   const session = await getServerSession();
-  if (!session) return <p className="p-6">Please login.</p>;
+  if (!session) redirect("/login");
 
+  /* ---------- 2) Query ---------- */
   const routines = await prisma.routine.findMany({
     where: {
-      user:  { email: session.user.email ?? "" },
+      user: { email: session.user.email ?? "" },
       title: { not: "" },
     },
     orderBy: { id: "asc" },
   });
 
+  /* ---------- 3) UI ---------- */
   return (
     <div className="flex flex-col items-center gap-6 p-6">
       <h1 className="text-xl font-semibold">My Routines</h1>
@@ -23,13 +34,19 @@ export default async function RoutinePage() {
 
       {routines.length > 0 ? (
         <>
-          <hr className="w-full max-w-md border-gray-200" />
-          <div className="grid w-full max-w-md gap-4">
+          <hr className="my-6 w-full border-gray-700" />
+          <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
             {routines.map((r) => (
               <RoutineCard
                 key={r.id}
-                {...r}
-                startAt={r.startAt.toISOString()}   {/* ← string ✓ */}
+                /* --------- prop รายตัวให้ตรง interface --------- */
+                id={r.id}
+                title={r.title}
+                weekdays={r.weekdays}
+                startAt={r.startAt.toISOString()}  // ← ต้องเป็น string
+                durationSec={r.durationSec}
+                progressSec={r.progressSec}
+                finished={r.finished}
               />
             ))}
           </div>
