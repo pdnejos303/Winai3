@@ -1,9 +1,10 @@
 /* ────────────────────────────────────────────────────────────────
  * FILE: src/components/routines/RoutineCard.tsx
- * DESC: การ์ด Routine (Client Component)
+ * DESC: การ์ด routine (Client Component)
  *  - ปุ่ม Play / Pause / Done + Edit + Delete
- *  - จับเวลา → PATCH progressSec ↔ DB ทุก 15 s + ตอน pause / unmount / finish
- *  - ดีไซน์ตรง mockup: พื้นครีม, progress เหลือง, ปุ่มวงกลมฟ้า/มะกอก
+ *  - จับเวลาแล้วบันทึก progress ↔ DB
+ *  - Throttle PATCH ทุก 15 s  + save ตอน pause / unmount / finish
+ *  - Edit: เปลี่ยนชื่อ + นาที  (prompt เวอร์ชันเร็ว)  → PATCH → reload
  * ----------------------------------------------------------------*/
 
 "use client";
@@ -16,21 +17,19 @@ import clsx from "clsx";
 export interface RoutineCardProps {
   id: number;
   title: string;
-  description?: string;          // ★ subtitle (optional)
   weekdays: number[] | null;
-  startAt: string;               // ISO string
+  startAt: string;      // ISO string
   durationSec: number;
   progressSec: number;
   finished: boolean;
 }
 
 const DAY = ["S", "M", "T", "W", "T", "F", "S"];
-const THROTTLE_SEC = 15; // PATCH ทุก 15 s
+const THROTTLE_SEC = 15;
 
 export default function RoutineCard({
   id,
   title,
-  description,
   weekdays,
   startAt,
   durationSec,
@@ -46,8 +45,8 @@ export default function RoutineCard({
   const timer = useRef<NodeJS.Timeout | null>(null);
   const throttle = useRef(0);
 
-  /* ---------- API helpers ---------- */
-  const patch = (data: Partial<{ progressSec: number; finished: boolean }>) =>
+  /* ---------- API ---------- */
+  const patch = (data: Partial<{ progressSec: number; finished: boolean; title: string; durationSec: number }>) =>
     fetch(`/api/routines/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -57,11 +56,8 @@ export default function RoutineCard({
   const erase = () =>
     fetch(`/api/routines/${id}`, { method: "DELETE" }).then(() => location.reload());
 
-  /* ---------- timer helpers ---------- */
-  const clear = () => {
-    if (timer.current) clearInterval(timer.current as unknown as number);
-    timer.current = null;
-  };
+  /* ---------- timer logic ---------- */
+  const clear = () => timer.current && clearInterval(timer.current as unknown as number);
 
   const commitStop = async (p: number, done = false) => {
     clear();
@@ -93,6 +89,18 @@ export default function RoutineCard({
     setRunning(true);
   };
 
+  /* ---------- NEW: handleEdit ---------- */
+  async function handleEdit() {
+    const newTitle = prompt("Edit title:", title);
+    if (!newTitle || newTitle.trim() === title) return;
+
+    const newMin = prompt("Duration (minutes):", String(Math.round(durationSec / 60)));
+    if (!newMin || isNaN(Number(newMin))) return;
+
+    await patch({ title: newTitle.trim(), durationSec: Number(newMin) * 60 });
+    location.reload();
+  }
+
   /* save on unmount */
   useEffect(
     () => () => {
@@ -105,98 +113,93 @@ export default function RoutineCard({
 
   /* ---------- derived visual ---------- */
   const percent = durationSec ? Math.min(100, (progress / durationSec) * 100) : 0;
-  const timeLabel = new Date((progress % 86_400) * 1_000)
-    .toISOString()
-    .substring(11, 19);
-  const durationLabel =
-    durationSec % 3600 === 0
-      ? `${durationSec / 3600} Hour`
-      : `${Math.round(durationSec / 60)} Min`;
+  const timeLabel = new Date((progress % 86_400) * 1_000).toISOString().substring(11, 19);
 
-  const chipActive = finished
-    ? "bg-white text-emerald-600"
-    : "bg-brand-green text-white";
+  const chipActive = finished ? "bg-white text-emerald-600" : "bg-brand-green text-white";
   const chipInactive = "bg-gray-300 text-white/60";
 
   /* ---------- UI ---------- */
   return (
-    <div className="relative flex items-center gap-3">
-      {/* ── Card body ─────────────────────────────────────── */}
-      <div className="flex-1 rounded-xl bg-[#FFFBEA] p-4 shadow-sm">
-        {/* title + duration */}
-        <div className="mb-1 flex items-baseline gap-2">
-          <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-          <span className="text-2xl font-bold text-gray-300">{durationLabel}</span>
+    <div
+      className={clsx(
+        "rounded-xl border shadow-sm ring-1 ring-black/5 backdrop-blur",
+        finished ? "bg-emerald-500" : "bg-white/90",
+      )}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between px-4 py-3">
+        <h3 className={clsx("max-w-[60%] truncate text-base font-semibold", finished && "text-white")}>
+          {title}
+        </h3>
+
+        <div className="flex items-center gap-1">
+          {/* Play / Pause / Done */}
+          <button
+            onClick={toggle}
+            disabled={finished}
+            className={clsx(
+              "grid h-8 w-8 place-items-center rounded-full transition",
+              finished
+                ? "bg-white/20 text-white"
+                : "bg-brand-green/20 text-brand-green hover:bg-brand-green hover:text-white",
+            )}
+          >
+            {finished ? <CheckCircle size={18} strokeWidth={3} /> : running ? <Pause size={18} strokeWidth={3} /> : <Play size={18} strokeWidth={3} />}
+          </button>
+
+          {/* Edit */}
+          <button
+            onClick={handleEdit}
+            className="rounded bg-brand-green/80 p-1 text-white hover:bg-brand-green"
+            aria-label="edit"
+          >
+            <Pencil size={14} />
+          </button>
+
+          {/* Delete */}
+          <button
+            onClick={erase}
+            className="rounded bg-red-500/80 p-1 text-white hover:bg-red-500"
+            aria-label="delete"
+          >
+            <Trash2 size={14} />
+          </button>
         </div>
+      </div>
 
-        {description && (
-          <p className="mb-1 text-sm text-gray-600">{description}</p>
-        )}
+      {/* Weekday chips */}
+      <div className="flex gap-1 px-4 pb-1">
+        {DAY.map((d, i) => (
+          <span
+            key={i}
+            className={clsx(
+              "inline-block h-5 w-5 rounded-full text-center text-[10px] leading-5",
+              (weekdays ?? []).includes(i) ? chipActive : chipInactive,
+            )}
+          >
+            {d}
+          </span>
+        ))}
+      </div>
 
-        {/* weekday chips */}
-        <div className="mb-2 flex gap-1">
-          {DAY.map((d, i) => (
-            <span
-              key={i}
-              className={clsx(
-                "inline-block h-5 w-5 rounded-full text-center text-[10px] leading-5",
-                (weekdays ?? []).includes(i) ? chipActive : chipInactive,
-              )}
-            >
-              {d}
-            </span>
-          ))}
-        </div>
-
-        {/* counter */}
-        <div className="mb-2 text-right text-sm text-gray-700">{timeLabel}</div>
-
-        {/* progress bar */}
-        <div className="h-4 w-full overflow-hidden rounded-full bg-gray-200">
+      {/* Progress bar */}
+      <div className="px-4 pb-3">
+        <div className="h-3 w-full overflow-hidden rounded-full bg-gray-200/80">
           <div
-            className="h-full rounded-full bg-[#F5CF19] transition-[width] duration-300"
+            className={clsx(
+              "h-full origin-left rounded-full transition-[width] duration-300 ease-out",
+              finished ? "bg-emerald-600" : "bg-amber-400",
+            )}
             style={{ width: `${percent}%` }}
           />
         </div>
       </div>
 
-      {/* ── Play / Pause / Done ───────────────────────────── */}
-      <button
-        onClick={toggle}
-        disabled={finished}
-        className={clsx(
-          "grid h-12 w-12 flex-shrink-0 place-items-center rounded-full shadow",
-          finished
-            ? "bg-[#8BC6EC] text-white"
-            : "bg-[#B9DEF3] text-white hover:brightness-110",
-        )}
-      >
-        {finished ? (
-          <CheckCircle size={20} strokeWidth={3} />
-        ) : running ? (
-          <Pause size={20} strokeWidth={3} />
-        ) : (
-          <Play size={20} strokeWidth={3} />
-        )}
-      </button>
-
-      {/* ── Edit ──────────────────────────────────────────── */}
-      <button
-        onClick={() => console.log("edit", id)}
-        className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-full bg-[#C3C700] text-white shadow hover:brightness-110"
-        title="edit (stub)"
-      >
-        <Pencil size={20} />
-      </button>
-
-      {/* ── Delete (hover) ────────────────────────────────── */}
-      <button
-        onClick={erase}
-        className="absolute -top-2 -right-2 hidden h-7 w-7 place-items-center rounded-full bg-red-500 p-[6px] text-white hover:bg-red-600 group-hover:grid sm:grid"
-        title="delete"
-      >
-        <Trash2 size={14} />
-      </button>
+      {/* Footer */}
+      <div className="flex items-center justify-between px-4 pb-4 text-xs font-medium">
+        <span>{finished ? "finished" : timeLabel}</span>
+        <span title={`Start: ${startAt.replace("T", " ").substring(0, 19)}`} />
+      </div>
     </div>
   );
 }
