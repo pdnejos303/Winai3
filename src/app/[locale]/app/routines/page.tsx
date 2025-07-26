@@ -1,52 +1,57 @@
 /* ────────────────────────────────────────────────────────────────
- * FILE: src/app/[locale]/app/routines/page.tsx
- * DESC: หน้าแสดง & เพิ่ม routine
+ * FILE:  src/app/[locale]/app/routines/page.tsx
+ * PAGE:  /{locale}/app/routines
+ * ROLE:
+ *   1) ตรวจ session
+ *   2) ดึง routine ทั้งหมดของผู้ใช้
+ *   3) ส่งต่อให้ <RoutineBoardClient />  (client component)
+ *      └ มีฟีเจอร์ Today / All toggle, search, sort, badge count ฯลฯ
  * ----------------------------------------------------------------*/
-import RoutineCard          from "@/components/routines/RoutineCard";
+
+import RoutineBoardClient   from "./RoutineBoardClient";      // ★ ใช้ client board
 import NewRoutineSection    from "@/components/routines/NewRoutineSection";
 import { prisma }           from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { redirect }         from "next/navigation";
 
+/* array ชื่อวัน (เอาไว้โชว์ heading) */
+const DAY_LABEL = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
 export default async function RoutinePage() {
-  /* 1) Auth ---------------------------------------------------- */
+  /* ── 1) auth ─────────────────────────────────────────── */
   const session = await getServerSession();
   if (!session) redirect("/login");
 
-  /* 2) Query routine ------------------------------------------ */
-  const routines = await prisma.routine.findMany({
-    where: { user: { email: session.user.email ?? "" }, title: { not: "" } },
+  const email = session.user.email ?? "";
+  if (!email) return <p className="p-6 text-red-600">User e-mail missing.</p>;
+
+  /* ── 2) fetch routine ───────────────────────────────── */
+  const dbRoutines = await prisma.routine.findMany({
+    where: { user: { email }, title: { not: "" } },
     orderBy: { id: "asc" },
   });
 
-  /* 3) UI ------------------------------------------------------ */
+  /*  แปลง startAt ให้เป็น string (client safe) */
+  const routines = dbRoutines.map((r) => ({
+    ...r,
+    startAt: r.startAt.toISOString(),
+  }));
+
+  /* ── 3) meta: วันปัจจุบัน ──────────────────────────── */
+  const todayIdx  = new Date().getDay();            // 0-6
+  const todayName = DAY_LABEL[todayIdx];
+
+  /* ── 4) render ─────────────────────────────────────── */
   return (
     <div className="flex flex-col items-center gap-6 p-6">
-      <h1 className="text-xl font-semibold">My Routines</h1>
+      {/* heading แสดงวันนี้ */}
+      <h1 className="text-xl font-semibold">Today is {todayName}</h1>
 
+      {/* ฟอร์มเพิ่ม (ยังคงใช้ได้เหมือนเดิม) */}
       <NewRoutineSection empty={routines.length === 0} />
 
-      {routines.length > 0 ? (
-        <>
-          <hr className="my-6 w-full border-gray-700" />
-          <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-            {routines.map((r) => (
-              <RoutineCard
-                key={r.id}
-                id={r.id}
-                title={r.title}
-                weekdays={r.weekdays}
-                startAt={r.startAt.toISOString()}
-                durationSec={r.durationSec}
-                progressSec={r.progressSec}
-                finished={r.finished}
-              />
-            ))}
-          </div>
-        </>
-      ) : (
-        <p className="text-sm text-gray-500">No routine yet — add one above!</p>
-      )}
+      {/* ★ RoutineBoardClient จัดการ filter / search / sort / stats ทั้งหมด */}
+      <RoutineBoardClient routines={routines} todayIdx={todayIdx} />
     </div>
   );
 }

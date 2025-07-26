@@ -1,106 +1,142 @@
-/* ────────────────────────────────────────────────────────────────
- * EditRoutineModal – ใช้ shadcn/ui Dialog (หรือ Headless UI ก็ได้)
- * ----------------------------------------------------------------*/
 "use client";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useEffect, useRef } from "react";
+import { DAY_LABEL } from "../../lib/const-day";
+import clsx from "clsx";
 
 interface Props {
   open: boolean;
-  setOpen: (b: boolean) => void;
-
-  /* ค่าเริ่มต้นของ routine */
-  id: number;
-  title: string;
-  durationSec: number;
-  weekdays: number[];
-  startAt: string;
-  onSaved?: () => void; // callback reload
+  setOpen: (v: boolean) => void;
+  routine: {
+    id: number;
+    title: string;
+    durationSec: number;
+    weekdays: number[];
+  };
+  onSaved?: () => void;
 }
-
-const DAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function EditRoutineModal({
   open,
   setOpen,
-  id,
-  title: initTitle,
-  durationSec: initDur,
-  weekdays: initWD,
-  startAt,
+  routine,
   onSaved,
 }: Props) {
-  /* ─ state form ─ */
-  const [title, setTitle] = useState(initTitle);
-  const [minutes, setMinutes] = useState(String(Math.round(initDur / 60)));
-  const [weekdays, setWeekdays] = useState<Set<number>>(new Set(initWD));
+  const dlgRef = useRef<HTMLDialogElement>(null);
 
-  const toggleDay = (d: number) =>
-    setWeekdays((s) => {
-      const c = new Set(s);
-      c.has(d) ? c.delete(d) : c.add(d);
-      return c;
-    });
+  /* sync prop → dialog (แก้ no-unused-expressions) */
+  useEffect(() => {
+    const dlg = dlgRef.current;
+    if (!dlg) return;
+    if (open) {
+      dlg.showModal();
+    } else {
+      dlg.close();
+    }
+  }, [open]);
 
-  /* ─ submit ─ */
-  async function handleSave() {
-    await fetch(`/api/routines/${id}`, {
+  /* ---------- submit ---------- */
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+
+    const title    = String(fd.get("title")).trim();
+    const minutes  = Number(fd.get("minutes"));
+    const weekdays = DAY_LABEL.map((_, idx: number) =>
+      fd.get(`d${idx}`) ? idx : undefined,
+    ).filter((n): n is number => n !== undefined);
+
+    await fetch(`/api/routines/${routine.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         title,
-        durationSec: Number(minutes) * 60,
-        weekdays: [...weekdays],
-        startAt,
+        durationSec: minutes * 60,
+        weekdays,
       }),
     });
+
     onSaved?.();
     setOpen(false);
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Edit routine</DialogTitle>
-        </DialogHeader>
+    <dialog
+      ref={dlgRef}
+      className="rounded-xl p-0 shadow-xl backdrop:bg-black/40"
+      onClose={() => setOpen(false)}
+    >
+      {/* header */}
+      <div className="border-b px-6 py-3 text-lg font-semibold">Edit routine</div>
 
-        <div className="space-y-3">
-          <Input label="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
+      {/* form */}
+      <form className="space-y-4 p-6" onSubmit={handleSubmit}>
+        {/* title */}
+        <label className="block">
+          <span className="mb-1 block text-sm">Title</span>
+          <input
+            name="title"
+            defaultValue={routine.title}
+            className="w-full rounded border px-3 py-2"
+            required
+          />
+        </label>
 
-          <Input
-            label="Duration (minutes)"
+        {/* duration */}
+        <label className="block">
+          <span className="mb-1 block text-sm">Duration (minutes)</span>
+          <input
+            name="minutes"
             type="number"
             min={1}
-            value={minutes}
-            onChange={(e) => setMinutes(e.target.value)}
+            defaultValue={Math.round(routine.durationSec / 60)}
+            className="w-full rounded border px-3 py-2"
+            required
           />
+        </label>
 
+        {/* weekdays */}
+        <fieldset>
+          <legend className="mb-1 text-sm">Weekdays</legend>
           <div className="flex flex-wrap gap-2">
-            {DAY.map((d, i) => (
-              <Checkbox
-                key={i}
-                checked={weekdays.has(i)}
-                onCheckedChange={() => toggleDay(i)}
-                label={d}
-              />
+            {DAY_LABEL.map((day: string, idx: number) => (
+              <label
+                key={idx}
+                className={clsx(
+                  "flex items-center gap-1 rounded px-2 py-1",
+                  routine.weekdays.includes(idx)
+                    ? "bg-brand-green text-white"
+                    : "bg-gray-200",
+                )}
+              >
+                <input
+                  type="checkbox"
+                  name={`d${idx}`}
+                  defaultChecked={routine.weekdays.includes(idx)}
+                />
+                <span className="text-xs">{day.slice(0, 3)}</span>
+              </label>
             ))}
           </div>
+        </fieldset>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={!title.trim()}>
-              Save
-            </Button>
-          </div>
+        {/* footer */}
+        <div className="flex justify-end gap-2 pt-2">
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="rounded border px-4 py-2"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="rounded bg-brand-green px-4 py-2 text-white"
+          >
+            Save
+          </button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </form>
+    </dialog>
   );
 }
