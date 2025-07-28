@@ -1,25 +1,25 @@
-/* Path: src/app/[locale]/layout.tsx
-   ---------------------------------------------------------------------------
-   ✅ await params → ตาม spec ใหม่
-   ------------------------------------------------------------------------- */
+/* src/app/[locale]/layout.tsx */
 import "../globals.css";
 import { Inter } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
+import Header from "@/components/layout/Header";
 import ClientProvider from "@/components/ui/ClientProvider";
-import Header         from "@/components/layout/Header";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = { title: "Winai2", description: "Task manager" };
 
-/* ❗️ props.params เป็น Promise → ต้อง await ก่อนใช้ */
-export default async function RootLayout(props: {
+export default async function RootLayout({
+  children,
+  params,                        // <-- Promise version
+}: {
   children: React.ReactNode;
-  params: Promise<{ locale: string }>;   // <-- update type
+  params: Promise<{ locale: string }>;
 }) {
-  const { locale } = await props.params;
-  const messages   = await getMessages({ locale });
+  /* ต้อง await ก่อนใช้ params ตาม spec Next15 */
+  const { locale } = await params;
+  const messages = await getMessages({ locale });
 
   return (
     <html lang={locale} className={inter.className}>
@@ -27,7 +27,7 @@ export default async function RootLayout(props: {
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ClientProvider>
             <Header />
-            {props.children}
+            {children}
           </ClientProvider>
         </NextIntlClientProvider>
       </body>

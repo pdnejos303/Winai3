@@ -6,7 +6,8 @@
 
 import { useMemo, useState } from "react";
 import RoutineCard from "@/components/routines/RoutineCard";
-import clsx from "clsx";
+import clsx        from "clsx";
+import { useClientT } from "@/i18n/useClientT";           // ★– i18n hook
 
 /* ---------- prop type (ตรงกับ page.tsx) ---------- */
 interface Routine {
@@ -32,6 +33,8 @@ function formatTotal(sec: number) {
 
 /* ─────────────────────────────────────────────────────────── */
 export default function RoutineBoardClient({ routines, todayIdx }: Props) {
+  const t = useClientT();                                 // ★– translator
+
   /* state */
   const [showToday, setShowToday] = useState(true);
   const [query, setQuery]         = useState("");
@@ -65,6 +68,14 @@ export default function RoutineBoardClient({ routines, todayIdx }: Props) {
   /* total duration sec */
   const totalSec = list.reduce((s,r)=>s+r.durationSec,0);
 
+  /* labels (i18n) ------------------------------------ */
+  const countLabel =
+    list.length === 1
+      ? t("routine.summary.single")
+      : t("routine.summary.many", { count: list.length });
+
+  const totalLabel = t("routine.summary.total", { time: formatTotal(totalSec) });
+
   /* ---------- UI ---------- */
   return (
     <div className="w-full space-y-4">
@@ -75,9 +86,9 @@ export default function RoutineBoardClient({ routines, todayIdx }: Props) {
 
           {/* toggle Today/All */}
           <div className="rounded-lg bg-gray-200 p-1">
-            {(["Today","All"] as const).map((lbl,i)=>(
+            {[t("routine.filter.today"), t("routine.filter.all")].map((lbl,i)=>(
               <button
-                key={lbl}
+                key={i}
                 onClick={()=>setShowToday(i===0)}
                 className={clsx(
                   "rounded-md px-3 py-1 text-sm",
@@ -94,7 +105,7 @@ export default function RoutineBoardClient({ routines, todayIdx }: Props) {
           {/* search */}
           <input
             type="text"
-            placeholder="Search…"
+            placeholder={t("common.search")}
             value={query}
             onChange={(e)=>setQuery(e.target.value)}
             className="w-44 rounded border px-2 py-1 text-sm shadow-inner focus:outline-brand-green"
@@ -103,24 +114,23 @@ export default function RoutineBoardClient({ routines, todayIdx }: Props) {
           {/* sort */}
           <select
             value={sortKey}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                  setSortKey(e.target.value as "new" | "old" | "long")
-                }            className="rounded border px-2 py-1 text-sm"
+            onChange={(e) =>
+              setSortKey(e.target.value as "new" | "old" | "long")
+            }
+            className="rounded border px-2 py-1 text-sm"
           >
-            <option value="new">Newest</option>
-            <option value="old">Oldest</option>
-            <option value="long">Longest</option>
+            <option value="new">{t("routine.sort.newest")}</option>
+            <option value="old">{t("routine.sort.oldest")}</option>
+            <option value="long">{t("routine.sort.longest")}</option>
           </select>
         </div>
 
         {/* right group (stats) */}
         <div className="flex items-center gap-3">
           <span className="rounded bg-brand-green/20 px-2 py-1 text-xs text-brand-green">
-            {list.length} routines
+            {countLabel}
           </span>
-          <span className="text-xs text-gray-500">
-            Total {formatTotal(totalSec)}
-          </span>
+          <span className="text-xs text-gray-500">{totalLabel}</span>
         </div>
       </div>
 
@@ -142,7 +152,7 @@ export default function RoutineBoardClient({ routines, todayIdx }: Props) {
         </div>
       ) : (
         <p className="py-10 text-center text-sm text-gray-500">
-          No routine matched.
+          {t("routine.noMatch")}
         </p>
       )}
     </div>

@@ -1,18 +1,76 @@
 {
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "yes": "Yes",
+    "no": "No",
+    "search": "Search…"
+  },
+
+  "nav": {
+    "home": "Home",
+    "tasks": "Tasks",
+    "routines": "Routines",
+    "logout": "Logout"
+  },
+
   "home": {
     "welcome": "Welcome to Winai2",
     "goLogin": "Go to Login"
   },
+
   "login": {
-    "title":    "Login",
-    "email":    "Email",
+    "title": "Login",
+    "email": "Email",
     "password": "Password",
-    "login":    "Login",
-    "signing":  "Signing in…",
-    "or":       "or",
+    "login": "Login",
+    "signing": "Signing in…",
+    "or": "or",
     "noAccount": "Don’t have an account?",
     "register": "Register",
-    "success":  "Logged in!",
-    "failed":   "Login failed"
+    "success": "Logged in!",
+    "failed": "Login failed"
+  },
+
+  "dashboard": {
+    "welcome": "Welcome back"
+  },
+
+  "task": {
+    "title": "My Tasks",
+    "add": "Add Task",
+    "edit": "Edit Task",
+    "empty": "No task yet — add one above!",
+    "due": "Due",
+    "urgency": "Urgency",
+    "status": {
+      "incompleted": "Incompleted",
+      "completed": "Completed"
+    }
+  },
+
+  "routine": {
+    "title": "My Routines",
+    "add": "Add Routine",
+    "empty": "No routine yet — add one above!",
+    "today": "Today is {{day}}",
+
+    "filter": { "today": "Today", "all": "All" },
+
+    "sort": {
+      "newest":  "Newest",
+      "oldest":  "Oldest",
+      "longest": "Longest"
+    },
+
+    "summary": {
+      "single": "1 routine",
+      "many":   "{count} routines",
+      "total":  "Total {time}"
+    },
+
+    "noMatch": "No routine matched."
   }
 }

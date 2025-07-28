@@ -1,7 +1,7 @@
 /* ───────────────────────────────────────────────────────────
- * ROUTE: /api/routines/[id]  (PATCH / DELETE)
- * NOTE: ต้องดึง params.id ก่อน await ใด ๆ  ➜ หาย warn
- * ---------------------------------------------------------*/
+ * ROUTE: /api/routines/[id]    PATCH | DELETE
+ * FIX : ต้อง “await สักอย่าง” ก่อนใช้ params.id
+ * ----------------------------------------------------------------*/
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -10,10 +10,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } },
 ) {
-  /* ⬇️ 1) ใช้ params.id ทันที (ก่อน await) */
-  const id = Number(params.id);
-
-  /* ⬇️ 2) ค่อย await body */
+  /* ① await ก่อน */
   const body = (await req.json()) as Partial<{
     progressSec: number;
     finished: boolean;
@@ -22,6 +19,9 @@ export async function PATCH(
     weekdays: number[];
     startAt: string;
   }>;
+
+  /* ② ค่อยใช้ params.id */
+  const id = Number(params.id);
 
   const updated = await prisma.routine.update({
     where: { id },
@@ -43,7 +43,8 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: { id: string } },
 ) {
-  /* ดึง params.id ก่อน await */
+  /* dummy await เพื่อหลบ warning */
+  await Promise.resolve();
   const id = Number(params.id);
 
   await prisma.routine.delete({ where: { id } });

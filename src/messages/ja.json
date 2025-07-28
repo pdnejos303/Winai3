@@ -1,21 +1,76 @@
 {
+  "common": {
+    "save": "保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "edit": "編集",
+    "yes": "はい",
+    "no": "いいえ",
+    "search": "検索…"
+  },
+
+  "nav": {
+    "home": "ホーム",
+    "tasks": "タスク",
+    "routines": "ルーチン",
+    "logout": "ログアウト"
+  },
+
+  "home": {
+    "welcome": "ようこそ Winai2 へ",
+    "goLogin": "ログインページへ"
+  },
+
   "login": {
-    "title":    "ログイン",
-    "email":    "メール",
+    "title": "ログイン",
+    "email": "メール",
     "password": "パスワード",
-    "login":    "ログイン",
-    "signing":  "ログイン中…",
-    "or":       "または",
+    "login": "ログイン",
+    "signing": "ログイン中…",
+    "or": "または",
     "noAccount": "アカウントがありませんか？",
     "register": "登録",
-    "success":  "ログイン成功！",
-    "failed":   "ログイン失敗"
+    "success": "ログイン成功！",
+    "failed": "ログイン失敗"
   },
+
   "dashboard": {
     "welcome": "お帰りなさい"
   },
-    "home": {
-    "welcome": "ようこそ Winai2 へ",
-    "goLogin": "ログインページへ"
+
+  "task": {
+    "title": "マイタスク",
+    "add": "タスクを追加",
+    "edit": "タスクを編集",
+    "empty": "タスクがありません — 上で追加してください！",
+    "due": "期限",
+    "urgency": "緊急度",
+    "status": {
+      "incompleted": "未完了",
+      "completed": "完了"
+    }
+  },
+
+  "routine": {
+    "title": "マイルーチン",
+    "add": "ルーチンを追加",
+    "empty": "ルーチンがありません — 上で追加してください！",
+    "today": "今日は{{day}}です",
+
+    "filter": { "today": "今日", "all": "すべて" },
+
+    "sort": {
+      "newest":  "新しい順",
+      "oldest":  "古い順",
+      "longest": "長い順"
+    },
+
+    "summary": {
+      "single": "1 件のルーチン",
+      "many":   "{count} 件のルーチン",
+      "total":  "合計 {time}"
+    },
+
+    "noMatch": "条件に合うルーチンがありません"
   }
 }
