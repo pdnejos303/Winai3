@@ -17,8 +17,11 @@
   },
 
   "home": {
+    "headline": "Stay Organized, Stay Creative",
+        "subtext": "Join millions of people to capture ideas, organize life, and do something creative.",
     "welcome": "Welcome to Winai2",
-    "goLogin": "Go to Login"
+    "goLogin": "Go to Login",
+       "download": "Download"
   },
 
   "login": {
@@ -36,7 +39,7 @@
 
   "dashboard": {
     "welcome": "Welcome back"
-  },
+  },  
 
   "task": {
     "title": "My Tasks",

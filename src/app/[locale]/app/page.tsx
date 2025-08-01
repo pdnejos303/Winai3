@@ -5,6 +5,7 @@
 /* -------------------------------------------------------------------------- */
 import { getAuthSession } from "@/lib/auth";
 import LogoutButton from "@/components/LogoutButton";
+import TaskGenerateForm from "@/components/task/generator/TaskGenerateForm";
 
 export default async function AppHome() {
   // ดึง session จาก helper getAuthSession (ใช้ server-side)
@@ -16,7 +17,7 @@ export default async function AppHome() {
         ยินดีต้อนรับ,{" "}
         <span className="text-blue-400">{session?.user?.email}</span>
       </h1>
-
+ <TaskGenerateForm />
       {/* ปุ่ม Logout */}
       <LogoutButton />
     </main>
