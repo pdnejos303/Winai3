@@ -25,11 +25,13 @@
     "jsx": "preserve",
 
     /* ---------- Path Alias (สำคัญสุด) ---------- */
-    "baseUrl": ".",                         // อ้าง root = project root
+    "baseUrl": ".",             // root = project root
     "paths": {
-      "@/*": ["src/*"],                     // ใช้ @/… ชี้ไปยัง src ทั้งหมด
+      "@/*":            ["src/*"],
       "@/components/*": ["src/components/*"],
-      "@/lib/*": ["src/lib/*"]
+      "@/lib/*":        ["src/lib/*"],
+      "@/utils/*":      ["src/utils/*"],     // ✅ เพิ่ม utils
+      "@/types/*":      ["src/types/*"]      // ✅ เพิ่ม types (เช่น ai-task)
     },
 
     /* ---------- Next.js plugin ---------- */
@@ -39,8 +41,8 @@
   /* ---------- Scope ไฟล์ที่ต้อง compile ---------- */
   "include": [
     "next-env.d.ts",
-    "src",               // รวมทุกไฟล์ใน src/
-    "src/types/**/*",    // custom type declaration
+    "src",                    // ทุกไฟล์ใต้ src
+    "src/types/**/*",         // custom types
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts"

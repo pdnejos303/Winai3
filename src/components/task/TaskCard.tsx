@@ -6,6 +6,7 @@
 // • เอา progress bar (pink/green) ออก → ใช้ UrgencyBars 3 ช่องติด
 // • แก้ ESLint/TS ทุกจุด (no-explicit-any, unused eslint-disable, TS2741 ฯลฯ)
 // ─────────────────────────────────────────────────────────────
+
 "use client";
 
 import { useState } from "react";

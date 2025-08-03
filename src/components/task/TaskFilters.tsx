@@ -13,7 +13,7 @@ export type TaskFiltersState = {
   urgency: "all" | 0 | 1 | 2 | 3;      // 0-None, 1-High, 2-Medium, 3-Low
   categoryId: "all" | number;
 };
-
+export type FilterState = TaskFiltersState;
 type Props = {
   categories: Category[];
   onChange: (f: TaskFiltersState) => void;
