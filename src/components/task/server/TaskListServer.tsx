@@ -1,30 +1,20 @@
 // ─────────────────────────────────────────────────────────────
-// SERVER fetcher – คืน TaskGrid พร้อม props ที่ถูกต้อง
+// FILE: src/components/task/server/TaskListServer.tsx
+// DESC: Preload tasks + categories ที่เซิร์ฟเวอร์ แล้วส่งลง TaskGrid
 // ─────────────────────────────────────────────────────────────
-import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth/next";
-import TaskGrid from "@/components/task/TaskGrid";
+import prisma from "@/lib/prisma";
+import TaskGrid, { type TaskWithCat } from "@/components/task/TaskGrid";
 
 export default async function TaskListServer() {
-  const session = await getServerSession();
-  if (!session) return null;                 // จะ redirect ที่ page อยู่แล้ว
-
-  const email = session.user.email!;
-  /* --- ดึง tasks + categories ของผู้ใช้เดียวกัน --- */
   const [tasks, categories] = await Promise.all([
-    prisma.task.findMany({
-      where: { user: { email } },
-      include: { category: true },
-      orderBy: { dueDate: "asc" },
-    }),
-    prisma.category.findMany({ where: { user: { email } } }),
+    prisma.task.findMany({ include: { category: true } }),
+    prisma.category.findMany(),
   ]);
 
-  /* --- ส่ง prop ชื่อ initialTasks --- */
   return (
     <TaskGrid
-      initialTasks={tasks}
-      categories={categories}
+      initialTasks={tasks as TaskWithCat[]}
+      initialCategories={categories}
     />
   );
 }
