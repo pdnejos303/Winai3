@@ -1,8 +1,10 @@
 // ─────────────────────────────────────────────────────────────
 // FILE: src/components/task/TaskGrid.tsx
-// DESC: Grid + Filter + Add + Bulk-edit + Category dialog
+// DESC: Grid + Filter + Add + Bulk-edit + Category dialog (+ AI Import)
 //       • ถ้ามี initialTasks / initialCategories → แสดงรายการทันที
 //       • ถ้าไม่มี → ดึง API แล้วโชว์ Skeleton 6 ใบระหว่างโหลด
+//       • **NEW 2025-08-04:** เพิ่มปุ่ม “+ AI Tasks” และโมดัล
+//         <AddAiTasksModal> ที่เรียก GPT สร้างงานชุดใหญ่
 // ─────────────────────────────────────────────────────────────
 "use client";
 
@@ -14,6 +16,7 @@ import TaskCard from "./TaskCard";
 import TaskCardSkeleton from "./TaskCardSkeleton";
 import TaskFilter, { FilterState } from "./TaskFilters";
 import AddTaskModal from "./AddTaskModal";
+import AddAiTasksModal from "./AddAiTasksModal";            // ← NEW
 import BulkEditModal from "./BulkEditModal";
 import AddCategoryDialog from "./AddCategoryDialog";
 
@@ -46,7 +49,8 @@ export default function TaskGrid({
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(initialTasks.length === 0); // ถ้ามี data แล้วไม่ต้องโหลด
-  const [showAdd, setShowAdd] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);      // modal: add manual
+  const [showAddAi, setShowAddAi] = useState(false);  // modal: add via AI  ← NEW
   const [showAddCat, setShowAddCat] = useState(false);
   const [showBulk, setShowBulk] = useState(false);
 
@@ -126,14 +130,22 @@ export default function TaskGrid({
     await Promise.all(selectedIds.map((id) => fetch(`/api/tasks/${id}`, { method: "DELETE" })));
   }
 
+  /* ---------------------------------------------------------------------- */
+  /*  เมื่อ Import งานจาก AI เสร็จ                                           */
+  /* ---------------------------------------------------------------------- */
+  function handleAiImported(aiTasks: TaskWithCat[]) {
+    // aiTasks อาจยังไม่มี id (0 / undefined) → ใส่ลิสต์แล้ว sort
+    setTasks((prev) => [...prev, ...aiTasks].sort((a, b) => +a.dueDate - +b.dueDate));
+  }
+
   // ---------- JSX ----------
   return (
     <div className="space-y-6">
       {/* BAR */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <TaskFilter categories={categories} onChange={setFilters} />
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={() => setShowAddCat(true)}
             className="rounded-md border px-3 py-1 hover:bg-gray-50"
@@ -159,6 +171,15 @@ export default function TaskGrid({
             </>
           )}
 
+          {/* NEW: ปุ่มเพิ่มด้วย AI */}
+          <button
+            onClick={() => setShowAddAi(true)}
+            className="rounded-md bg-emerald-600 px-4 py-2 font-medium text-white hover:opacity-90"
+          >
+            + AI Tasks
+          </button>
+
+          {/* ปุ่มเพิ่มด้วยมือ (เดิม) */}
           <button
             onClick={() => setShowAdd(true)}
             className="rounded-md bg-brand-green px-4 py-2 font-medium text-white hover:opacity-90"
@@ -196,7 +217,7 @@ export default function TaskGrid({
         </div>
       )}
 
-      {/* MODAL – Add Task */}
+      {/* MODAL – Add Task (manual) */}
       <AddTaskModal
         open={showAdd}
         setOpen={setShowAdd}
@@ -204,6 +225,13 @@ export default function TaskGrid({
         onCreated={(t) =>
           setTasks((p) => [...p, t as TaskWithCat].sort((a, b) => +a.dueDate - +b.dueDate))
         }
+      />
+
+      {/* MODAL – Add Task (AI) */}
+      <AddAiTasksModal
+        open={showAddAi}
+        setOpen={setShowAddAi}
+        onImported={handleAiImported}
       />
 
       {/* DIALOG – Add Category */}
