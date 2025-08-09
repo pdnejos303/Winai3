@@ -25,6 +25,9 @@ model User {
   tasks      Task[]
   categories Category[]
   routines   Routine[]
+
+    payments  Payment[]      // relation ↔ Payment.user
+
 }
 
 model Account {
@@ -132,4 +135,28 @@ model RoutineLog {
 
   routineId Int
   routine   Routine @relation(fields: [routineId], references: [id], onDelete: Cascade)
+}
+
+
+/// ───── enum ใหม่ ─────
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELED
+}
+
+/// ───── model ใหม่ ─────
+model Payment {
+  id              Int           @id @default(autoincrement())
+  stripeSessionId String        @unique      // id จาก Stripe
+  amount          Int
+  currency        String
+  status          PaymentStatus @default(PENDING)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  /// relation
+  userId Int
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
